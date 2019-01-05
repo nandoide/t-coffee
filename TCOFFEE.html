@@ -14108,15 +14108,16 @@ ERROR: There are failed tests
 <div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
 </div><div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h2 id="From-pairs-to-sets">From pairs to sets<a class="anchor-link" href="#From-pairs-to-sets">&#182;</a></h2><p>In each step we need to align two groups of sequences, of length $n &gt;= 1$ and $m &gt;= 1$.</p>
+<h2 id="From-pairs-to-sets">From pairs to sets<a class="anchor-link" href="#From-pairs-to-sets">&#182;</a></h2><p>In each step of multiple alignment we need to <strong>align two sets of sequences previously intra-aligned</strong>, of length $n &gt;= 1$ and $m &gt;= 1$.</p>
 <p>Each group is aligned as a whole, in the sense that the gaps entered in one of the sequences of the group must be introduced in the same positions in the rest of the sequences of their group.</p>
-<p> To assign a score to a position, the combined score of all the residuals of that position is used. To do this we produce the Cartesian product $n x m$ of all the characters of that position and calculate the average of scores:
+<p>The precise algorithm would need to align all the sequences at the same time, but this is a tremendous CPU intensive problem and a huge memory consumer one. A NP-complete problem.</p>
+<p>To assign a score to a position, the combined score of all the residuals of that position is used. To do this we produce the Cartesian product $n x m$ of all the characters of that position and calculate the average of scores:
  
  $$\frac{\sum_{
 \begin{subarray}{l} 0\leq i\lt n\\0\leq j\lt m\end{subarray}} matrix(i,j)}{n m}$$
  
 If in any of the positions we have a gap, we have chosen to penalize it as the sum of penalties assigned to the start of the gap plus gap continuation penalty. It is a criterion, <em>CLUSTAL</em> we know that it uses another one.</p>
-<p>If we already have a pairwise development, as it was my case, it would be easy to extend it to address MSA?. The answer is affirmative. With slight modifications in the class <strong>AlignSequences</strong>, we have managed to address an MSA, in the following way:
+<p>If we already have a pairwise development, as it was our case, it would be easy to extend it to address MSA?. The answer is affirmative. With slight modifications in the pairwise methods, we have managed to address an MSA, in the following way:
     </p>
 <ol>
 <li>Generalize the one-position scoring algorithm to take into account all the sequences of both groups, averaging the scores as indicated above.</li>
@@ -14127,7 +14128,7 @@ If in any of the positions we have a gap, we have chosen to penalize it as the s
 </ol>
 <p>    </p>
 <ol>
-<li>Compare the sequences resulting from the pairwise alignment with their originals from each group, compute where the gap is introduced and introduce the gap at the same positions in the rest of the sequences of each group.</li>
+<li>Compare the sequences resulting from the pairwise alignment with their originals from each group, compute where the gap is introduced and introduce the gap at the same positions in the rest of the sequences of each group (method <em>gapeator</em>).</li>
 </ol>
 
 </div>
@@ -14136,19 +14137,19 @@ If in any of the positions we have a gap, we have chosen to penalize it as the s
 <div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
 </div><div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h2 id="Which-order?-Guide-trees.">Which order? Guide trees.<a class="anchor-link" href="#Which-order?-Guide-trees.">&#182;</a></h2><p>But
+<h2 id="Which-order?-Guide-trees.">Which order? Guide trees.<a class="anchor-link" href="#Which-order?-Guide-trees.">&#182;</a></h2><p>But which order to follow 
 The method of progressive alignment based on a guide tree is used.</p>
 <p>The guide tree can be obtained in two alternative ways: <strong>Unweighted Pair Group Method with Arithmetic Mean (UPGMA)</strong> and <strong>Neighbor Join (NJ)</strong>, the same options present in <em>CLUSTAL</em> software.</p>
-<p>The alignment has three known phases. These are the particularities of this implementation on each phase:</p>
+<p>To compute the guide tree two steps are necessary:</p>
 <ol>
-<li>Perform pairwise alignments between all the sequences involved and assign them a score.</li>
+<li>Perform a pairwise alignments between all pairs of sequences involved and assign them a score.</li>
 </ol>
 <p> In the case of <strong>UPGMA</strong> we use the proportion (in percentages) between matches and matches plus no matches (without taking gaps into account). That is, we use a measure of the identity between the two sequences involved. You can also use the distance, which would be the complement to 100 of identity, but we wanted to do so to be able to compare with the information that <em>CLUSTAL</em> throws at the beginning of his output. It does not affect the result, we simply have to look for maximum identities to build the guide tree, instead of minimum distances.
  
  In the case of <strong>NJ</strong>, we have chosen to use distances, computed also in percentages. Also not taking into account the number of gaps in the denominators.
  </p>
 <ol>
-<li>Build the guide tree. As I said, we can do it using UPGMA or NJ. The NJ method generates an unrooted tree. As we need a root, for purposes of the subsequent alignment, we have chosen to root it by clustering the two nodes that have no relation. There are other approaches.</li>
+<li>Build the guide tree. As we said, we can do it using UPGMA or NJ. The NJ method generates an unrooted tree. As we need a root, for purposes of the subsequent alignment, we have chosen to root it by clustering the two nodes that have no relation. There are other approaches.</li>
 </ol>
 
 </div>
@@ -14157,22 +14158,17 @@ The method of progressive alignment based on a guide tree is used.</p>
 <div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
 </div><div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h2 id="Putting-it-all-together:-the-CLUSTAL-way.">Putting it all together: the CLUSTAL way.<a class="anchor-link" href="#Putting-it-all-together:-the-CLUSTAL-way.">&#182;</a></h2><p>The guide tree can be obtained in two alternative ways: <strong>Unweighted Pair Group Method with Arithmetic Mean (UPGMA)</strong> and <strong>Neighbor Join (NJ)</strong>.</p>
-<p>The alignment has three phases. These are the particularities of this implementation on each phase:</p>
+<h2 id="Putting-it-all-together:-the-CLUSTAL-way.">Putting it all together: the CLUSTAL way.<a class="anchor-link" href="#Putting-it-all-together:-the-CLUSTAL-way.">&#182;</a></h2><p>The alignment has three phases:</p>
 <ol>
-<li>Perform pairwise alignments between all the sequences involved and assign them a score.</li>
-</ol>
-<p> In the case of <strong>UPGMA</strong> we use the proportion (in percentages) between matches and matches plus no matches (without taking gaps into account). That is, we use a measure of the identity between the two sequences involved. You can also use the distance, which would be the complement to 100 of identity, but we wanted to do so to be able to compare with the information that <em>CLUSTAL</em> throws at the beginning of his output. It does not affect the result, we simply have to look for maximum identities to build the guide tree, instead of minimum distances.
- 
- In the case of <strong>NJ</strong>, we have chosen to use distances, computed also in percentages. Also not taking into account the number of gaps in the denominators.
- </p>
-<ol>
+<li><p>Perform pairwise alignments between all the sequences involved and assign them a score. We use the global alignment Needleman-Wunsch.</p>
+</li>
 <li><p>Build the guide tree. The NJ method generates an unrooted tree. As we need a root, for purposes of the subsequent alignment, we have chosen to root it by clustering the two nodes that have no relation. There are other strategies.</p>
 </li>
-<li><p>Multiple alignment. Progressive alignment following the order indicated by the guide tree. 
- </p>
+<li><p>Multiple alignment. Progressive alignment following the order indicated by the guide tree.</p>
 </li>
 </ol>
+<p>NOTE: the substitution matrices used in pairwise could not be the same matrices used in step three.
+ </p>
 
 </div>
 </div>
@@ -14188,11 +14184,121 @@ The method of progressive alignment based on a guide tree is used.</p>
 <li>Weight matrices calculated combining information of several alignments:<ul>
 <li>Global one (Waterman)</li>
 <li>Local one (Smith-Waterman and others)</li>
+<li>In our implementation we combine the scoring information of a local alignment with a global one. In T-COFFEE terminology this object is the primary library, that we have compute as a dictionary of four keys: index of first sequence, index of second sequence, position of the first sequence, position of the second sequence. The positions are the position computed by a pairwise (global) alignment for every pair of sequences. These are the most important methods to do so:</li>
 </ul>
 </li>
-<li>Guide trees by NJ or UPGMA as CLUSTAL.</li>
-<li>Revision of initial alignments.
- 3-tuples progressive alignment</li>
+</ol>
+<div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">compute_libraries</span><span class="p">(</span><span class="n">sequences</span><span class="p">,</span> <span class="n">matrix</span><span class="p">,</span>\
+                      <span class="n">score_gap_ini</span><span class="p">,</span> <span class="n">score_gap_cont</span><span class="p">,</span> <span class="n">score_match</span><span class="p">,</span> <span class="n">score_no_match</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Compute initial library of identities based on scores of pairwise alignments</span>
+<span class="sd">     Args:</span>
+<span class="sd">        sequences (list of str): Seguences to compare.</span>
+<span class="sd">        matrix (dict of tuples of int): Substitution matrix, Biopython format.</span>
+<span class="sd">        score_gap_ini (int): Score of gap init.</span>
+<span class="sd">        score_gap_cont (int): Score of gap continuation.</span>
+<span class="sd">        score_match (int): Score of match characters (used if no matrix informed)</span>
+<span class="sd">        score_no_match (int): Score of no match characters (used if no matrix informed)</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        dict : primary library of alignments</span>
+<span class="sd">        dict : weight matrix</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">weight_library</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">primary_library</span> <span class="o">=</span> <span class="n">compute_library</span><span class="p">(</span><span class="n">sequences</span><span class="p">,</span> <span class="n">matrix</span><span class="p">,</span>\
+                <span class="n">weight_library</span><span class="p">,</span> <span class="s2">&quot;GLOBAL&quot;</span><span class="p">,</span> <span class="n">score_gap_ini</span><span class="p">,</span> <span class="n">score_gap_cont</span><span class="p">,</span>\
+                <span class="n">score_match</span><span class="p">,</span> <span class="n">score_no_match</span><span class="p">)</span>
+
+    <span class="n">_</span> <span class="o">=</span> <span class="n">compute_library</span><span class="p">(</span><span class="n">sequences</span><span class="p">,</span> <span class="n">matrix</span><span class="p">,</span>\
+                <span class="n">weight_library</span><span class="p">,</span> <span class="s2">&quot;LOCAL&quot;</span><span class="p">,</span> <span class="n">score_gap_ini</span><span class="p">,</span> <span class="n">score_gap_cont</span><span class="p">,</span>\
+                <span class="n">score_match</span><span class="p">,</span> <span class="n">score_no_match</span><span class="p">)</span>
+
+    <span class="n">extend_library_weigths</span><span class="p">(</span><span class="n">sequences</span><span class="p">,</span> <span class="n">weight_library</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">primary_library</span><span class="p">,</span> <span class="n">weight_library</span>
+
+<span class="k">def</span> <span class="nf">compute_library</span><span class="p">(</span><span class="n">sequences</span><span class="p">,</span> <span class="n">matrix</span><span class="o">=</span><span class="p">{},</span> <span class="n">weight_library</span><span class="o">=</span><span class="p">{},</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;GLOBAL&quot;</span><span class="p">,</span>\
+                    <span class="n">score_gap_ini</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">score_gap_cont</span><span class="o">=-</span><span class="mi">8</span><span class="p">,</span>\
+                    <span class="n">score_match</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">score_no_match</span><span class="o">=-</span><span class="mi">2</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Compute initial library of identities based on scores of PA</span>
+<span class="sd">     Args:</span>
+<span class="sd">        sequences (list of str): Seguences to compare.</span>
+<span class="sd">        matrix (dict of tuples of int): Substitution matrix, Biopython format.</span>
+<span class="sd">        mode (str): Computation mode:</span>
+<span class="sd">            &#39;GLOBAL&#39;           Global Alignment</span>
+<span class="sd">            &#39;LOCAL&#39;            Local Alignment</span>
+<span class="sd">            &#39;LONG_SUBSTRING&#39;   Long substring alignment</span>
+<span class="sd">        score_gap_ini (int): Score of gap init.</span>
+<span class="sd">        score_gap_cont (int): Score of gap continuation.</span>
+<span class="sd">        score_match (int): Score of match characters (used if no matrix informed)</span>
+<span class="sd">        score_no_match (int): Score of no match characters (used if no matrix informed)</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        list of str: primary library of alignments</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">primary_library</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">sequences</span><span class="p">)):</span>
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span> <span class="p">,</span> <span class="n">i</span><span class="p">):</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">)</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">primary_library</span><span class="p">:</span>
+                <span class="n">identity</span><span class="p">,</span> <span class="n">align_i</span><span class="p">,</span> <span class="n">align_j</span> <span class="o">=</span> <span class="n">pairwise_align_coffee</span><span class="p">(</span><span class="n">sequences</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">sequences</span><span class="p">[</span><span class="n">j</span><span class="p">],</span>\
+                                <span class="n">matrix</span><span class="p">,</span> <span class="n">mode</span><span class="p">,</span> <span class="n">score_gap_ini</span><span class="p">,</span> <span class="n">score_gap_cont</span><span class="p">,</span>\
+                                <span class="n">score_match</span><span class="p">,</span> <span class="n">score_no_match</span><span class="p">)</span>
+                <span class="n">update_weight_library</span><span class="p">(</span><span class="n">weight_library</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">identity</span><span class="p">,</span>\
+                               <span class="n">sequences</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">sequences</span><span class="p">[</span><span class="n">j</span><span class="p">],</span> <span class="n">align_i</span><span class="p">,</span> <span class="n">align_j</span><span class="p">)</span>
+                <span class="n">primary_library</span><span class="p">[(</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">)]</span> <span class="o">=</span> <span class="p">(</span><span class="n">align_i</span><span class="p">,</span> <span class="n">align_j</span><span class="p">,</span> <span class="n">identity</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">primary_library</span>
+
+<span class="k">def</span> <span class="nf">update_weight_library</span><span class="p">(</span><span class="n">weight_library</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">identity</span><span class="p">,</span>\
+                    <span class="n">seq_i</span><span class="p">,</span> <span class="n">seq_j</span><span class="p">,</span> <span class="n">align_i</span><span class="p">,</span> <span class="n">align_j</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Update weights library from alignments and %identity</span>
+<span class="sd">    &quot;&quot;&quot;</span>         
+    <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="p">(</span><span class="n">c_i</span><span class="p">,</span> <span class="n">c_j</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">align_i</span><span class="p">,</span> <span class="n">align_j</span><span class="p">)):</span>
+        <span class="k">if</span> <span class="n">c_i</span> <span class="o">!=</span> <span class="s2">&quot;-&quot;</span> <span class="ow">and</span> <span class="n">c_j</span> <span class="o">!=</span> <span class="s2">&quot;-&quot;</span><span class="p">:</span>
+            <span class="n">pos_i</span> <span class="o">=</span> <span class="n">get_pos</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">seq_i</span><span class="p">,</span> <span class="n">align_i</span><span class="p">)</span>
+            <span class="n">pos_j</span> <span class="o">=</span> <span class="n">get_pos</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">seq_j</span><span class="p">,</span> <span class="n">align_j</span><span class="p">)</span>
+            <span class="n">update_weight_at_pos</span><span class="p">(</span><span class="n">weight_library</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">pos_i</span><span class="p">,</span> <span class="n">pos_j</span><span class="p">,</span> <span class="n">identity</span><span class="p">)</span>
+            <span class="n">update_weight_at_pos</span><span class="p">(</span><span class="n">weight_library</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">pos_j</span><span class="p">,</span> <span class="n">pos_i</span><span class="p">,</span> <span class="n">identity</span><span class="p">)</span>
+</pre></div>
+<ol>
+<li>Extend libraries taking into account all the intermediate alignments using every k sequence between two other pair of sequences. It's a way to correct the weights computed in the primary library trying to circumvent the CLUSTAL problem that derived for poor initial alignments, i.e. all the sequences contribute to the weights of the primary library.</li>
+</ol>
+<div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">extend_library_weigths</span><span class="p">(</span><span class="n">sequences</span><span class="p">,</span> <span class="n">weight_library</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Extend library for all triplets of sequences</span>
+<span class="sd">    Taken into account the simetry i -&gt; k -&gt; j</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">len_sequences</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">sequences</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">len_sequences</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">len_sequences</span><span class="p">):</span>
+             <span class="k">if</span> <span class="n">k</span> <span class="o">!=</span> <span class="n">i</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">len_sequences</span> <span class="p">):</span>
+                    <span class="k">if</span> <span class="n">j</span> <span class="o">!=</span> <span class="n">k</span> <span class="ow">and</span> <span class="n">j</span> <span class="o">!=</span> <span class="n">i</span><span class="p">:</span>
+                        <span class="c1">#print(&quot;Triplet:&quot;, i, k, j)</span>
+                        <span class="n">extend_weigths</span><span class="p">(</span><span class="n">weight_library</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">j</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">extend_weigths</span><span class="p">(</span><span class="n">weight_library</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">j</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Extend weigths for pair of sequences (i,j) at pos (pos_i_posj)</span>
+<span class="sd">    taken into account the routes using k as</span>
+<span class="sd">    intermediate, by means of the alignments (i, k) and (k, j).</span>
+<span class="sd">    &quot;&quot;&quot;</span> 
+    <span class="k">for</span> <span class="n">pos_i</span><span class="p">,</span> <span class="n">pos_i_j</span> <span class="ow">in</span> <span class="n">weight_library</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">for</span> <span class="n">pos_j</span> <span class="ow">in</span> <span class="n">pos_i_j</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">pos_j</span> <span class="ow">in</span> <span class="n">weight_library</span><span class="p">[</span><span class="n">j</span><span class="p">][</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                <span class="k">for</span> <span class="n">pos_k</span> <span class="ow">in</span> <span class="n">weight_library</span><span class="p">[</span><span class="n">j</span><span class="p">][</span><span class="n">k</span><span class="p">][</span><span class="n">pos_j</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                    <span class="k">if</span> <span class="n">pos_k</span> <span class="ow">in</span> <span class="n">weight_library</span><span class="p">[</span><span class="n">k</span><span class="p">][</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                        <span class="k">for</span> <span class="n">pos_i_new</span> <span class="ow">in</span> <span class="n">weight_library</span><span class="p">[</span><span class="n">k</span><span class="p">][</span><span class="n">i</span><span class="p">][</span><span class="n">pos_k</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                            <span class="k">if</span> <span class="n">pos_i_new</span> <span class="o">==</span> <span class="n">pos_i</span><span class="p">:</span>
+                                <span class="n">m</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span>\
+                                    <span class="n">weight_library</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">k</span><span class="p">][</span><span class="n">pos_i</span><span class="p">][</span><span class="n">pos_k</span><span class="p">],</span>\
+                                    <span class="n">weight_library</span><span class="p">[</span><span class="n">j</span><span class="p">][</span><span class="n">k</span><span class="p">][</span><span class="n">pos_j</span><span class="p">][</span><span class="n">pos_k</span><span class="p">])</span>   
+                                <span class="n">weight_library</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">][</span><span class="n">pos_i</span><span class="p">][</span><span class="n">pos_j</span><span class="p">]</span> <span class="o">+=</span>  <span class="n">m</span>
+</pre></div>
+<ol>
+<li>Guide trees by NJ or UPGMA as CLUSTAL. T-COFFEE prefers CLUSTAL one.</li>
+<li>Progressive alignment based on weight matrices, not on substitution matrices as CLUSTAL, but other than that, the same strategy.</li>
 </ol>
 
 </div>
@@ -15011,8 +15117,6 @@ The method of progressive alignment based on a guide tree is used.</p>
         <span class="c1"># Matrix mode and other MSA parameters</span>
         <span class="n">matrix</span> <span class="o">=</span> <span class="n">weight_library</span>
         <span class="n">matrix_mode</span> <span class="o">=</span> <span class="s2">&quot;WEIGHT&quot;</span>
-<span class="c1">#         score_gap_ini = 0</span>
-<span class="c1">#         score_gap_cont = 0</span>
         <span class="c1"># From here only we need is to compute a MSA with weight matrix as reference.</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="n">matrix_mode</span> <span class="o">=</span> <span class="s2">&quot;SUBST&quot;</span>
@@ -15136,7 +15240,7 @@ The method of progressive alignment based on a guide tree is used.</p>
 <div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
 </div><div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h3 id="T-COFFEE-RUNS">T-COFFEE RUNS<a class="anchor-link" href="#T-COFFEE-RUNS">&#182;</a></h3>
+<h3 id="T-COFFEE">T-COFFEE<a class="anchor-link" href="#T-COFFEE">&#182;</a></h3>
 </div>
 </div>
 </div>
@@ -15383,7 +15487,7 @@ NFRVYYRDSRDPVWKGPAKLLWKGEGAVVIQDNSDIKVVPRRKAKI-------------------------------IRD
 <div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
 </div><div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h3 id="CLUSTALW">CLUSTALW<a class="anchor-link" href="#CLUSTALW">&#182;</a></h3>
+<h3 id="CLUSTALW-official-build.">CLUSTALW official build.<a class="anchor-link" href="#CLUSTALW-official-build.">&#182;</a></h3>
 </div>
 </div>
 </div>
@@ -15495,7 +15599,7 @@ CLUSTAL 2.1 multiple sequence alignment
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[4]:</div>
+<div class="prompt input_prompt">In&nbsp;[18]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span>%%bash
@@ -15520,9 +15624,9 @@ jupyter nbconvert --to html_with_toclenvs TCOFFEE.ipynb <span class="m">1</span>
 
 <div class="output_subarea output_stream output_stderr output_text">
 <pre>[NbConvertApp] Converting notebook TCOFFEE.ipynb to latex
-[NbConvertApp] Writing 135116 bytes to TCOFFEE.tex
+[NbConvertApp] Writing 122178 bytes to TCOFFEE.tex
 [NbConvertApp] Converting notebook TCOFFEE.ipynb to html_with_toclenvs
-[NbConvertApp] Writing 575086 bytes to TCOFFEE.html
+[NbConvertApp] Writing 574479 bytes to TCOFFEE.html
 </pre>
 </div>
 </div>
